@@ -52,6 +52,9 @@ def get_clearSkyTimes(weather_data):
 
     return valid_times
 
+def get_ISOTimes(weather_data, number):
+    return weather_data["hourly"]["time"][number]
+
 # ----------------------
 
 def convert_to_time(time):
@@ -105,3 +108,56 @@ def tuple_to_text(tuples):
     output_string += "."
 
     return output_string
+
+planets = ["Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"]
+
+def collect_planets(lat, long):
+    weather_data = get_weather(lat, long)
+    visible_times = get_clearSkyTimes(weather_data)
+
+    planets_visibility_arr = []
+    
+    
+    for tuple in visible_times:
+        lower = tuple[0]
+        upper = tuple[1]
+
+        for x in range (upper - lower + 1):
+            currentTime = lower + x
+            # Make the call and the creation of the planet visibility arr all in one async function
+            print("https://api.visibleplanets.dev/v3?latitude=" + str(lat) + "&longitude=" + str(long) + "&time=" + get_UTC(get_ISOTimes(weather_data, currentTime), lat, long))
+
+            resp = json.loads(requests.get("https://api.visibleplanets.dev/v3?latitude=" + str(lat) + "&longitude=" + str(long) + "&time=" + get_UTC(get_ISOTimes(weather_data, currentTime), lat, long)).text)
+            
+            planet_visibility_arr = [False, False, False, False, False, False, False, False]
+
+            for point in resp["data"]:
+                for planet in range(len(planets)):
+                    if point["name"] == planets[planet]:
+                        planet_visibility_arr[planet] = True
+        
+            planets_visibility_arr.append(planet_visibility_arr)
+    
+    return planets_visibility_arr
+
+
+
+# Handle Timezones
+
+from datetime import datetime
+import pytz
+from timezonefinder import TimezoneFinder
+
+def get_UTC(time, lat, long):
+    naive = datetime.strptime(time, "%Y-%m-%dT%H:%M")
+
+    tf = TimezoneFinder()  
+    local = pytz.timezone(tf.timezone_at(lng=float(long), lat=float(lat)))
+
+    local_dt = local.localize(naive, is_dst=None)
+    utc_dt = local_dt.astimezone(pytz.utc)
+
+    return utc_dt.isoformat()[0:19]
+
+# print(collect_planets(44.883, -93.283))
+# print(requests.get("https://api.visibleplanets.dev/v3?latitude=32&longitude=-98").text)
