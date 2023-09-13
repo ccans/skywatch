@@ -100,7 +100,7 @@ class Graphics:
     def auto_latlng(self):
         self.loc.set_to_current_location()
         self.change_latlng()
-        self.generate()
+        self.initialize()
 
     def initialize(self):
         self.output_label.config(text = self.loc.weather.weather_string)

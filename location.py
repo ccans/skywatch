@@ -36,5 +36,4 @@ class Location:
         response = requests.get('http://api.timezonedb.com/v2.1/get-time-zone?key=' + self.timezonedb_api_key + '&format=xml&by=position&lat=' + str(self.lat) + '&lng=' + str(self.long))
         timezone_data = ET.fromstring(response.text)
         self.timezone = int(timezone_data[8].text) / 3600
-        print(self.timezone)
     

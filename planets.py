@@ -1,6 +1,8 @@
 import json
 import planets
 import requests
+import aiohttp
+import asyncio
 
 from datetime import datetime
 import pytz
@@ -15,33 +17,44 @@ class Planets():
         self.weather_data = weather.weather_data
         self.lat = lat
         self.long = long
-        print(self.visible_times)
         if self.visible_times != -1:
-            self.update_planet_visibility()
+            asyncio.run(self.update_planet_visibility())
 
 
-    def update_planet_visibility(self):
+    async def update_planet_visibility(self):
         planets_visibility_arr = []
+
+        async with aiohttp.ClientSession() as session:
+
+            tasks = []
+            urls = []
         
-        for tuple in self.visible_times:
-            lower = tuple[0]
-            upper = tuple[1]
+            for tuple in self.visible_times:
+                lower = tuple[0]
+                upper = tuple[1]
 
-            for x in range (upper - lower + 1):
-                currentTime = lower + x
+                for x in range (upper - lower + 1):
+                    currentTime = lower + x
+                    urls.append("https://api.visibleplanets.dev/v3?latitude=" + str(self.lat) + "&longitude=" + str(self.long) + "&time=" + self.get_UTC(self.get_ISOTimes(self.weather_data, currentTime)))
+                    
+            for url in urls:
+                tasks.append(asyncio.ensure_future(self.get_hour_data(session, url)))
+                    
+            completed_tasks = await asyncio.gather(*tasks)
+        
+            self.planets_visibility_arr = completed_tasks
 
-                resp = json.loads(requests.get("https://api.visibleplanets.dev/v3?latitude=" + str(self.lat) + "&longitude=" + str(self.long) + "&time=" + self.get_UTC(self.get_ISOTimes(self.weather_data, currentTime))).text)
+    async def get_hour_data(self, session, url):
+        async with session.get(url) as resp:
+            resp = await resp.json()
+            planet_visibility_arr = [False, False, False, False, False, False, False, False]
+
+            for point in resp["data"]:
+                for planet in range(len(self.planets)):
+                    if point["name"] == self.planets[planet]:
+                        planet_visibility_arr[planet] = True
                 
-                planet_visibility_arr = [False, False, False, False, False, False, False, False]
-
-                for point in resp["data"]:
-                    for planet in range(len(self.planets)):
-                        if point["name"] == self.planets[planet]:
-                            planet_visibility_arr[planet] = True
-            
-                planets_visibility_arr.append(planet_visibility_arr)
-        
-        self.planets_visibility_arr = planets_visibility_arr
+            return planet_visibility_arr
 
 
     def get_UTC(self, time):

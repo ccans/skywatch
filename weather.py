@@ -10,7 +10,6 @@ class Weather:
         self.update_weather_data()
         self.update_clear_sky_times()
         self.update_weather_string()
-        print("weather created")
 
     def update_weather_data(self):
         response = requests.get('https://api.open-meteo.com/v1/forecast?latitude=' + str(self.lat) + '&longitude=' + str(self.long) + '&hourly=weathercode&daily=sunrise,sunset&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&timezone=auto&past_days=0&forecast_days=2')
