@@ -1,97 +1,116 @@
 import tkinter as tk
-from functions_package import *
 from storage import *
+from location import *
 
-window = tk.Tk()
+class Graphics:
 
-window.title("skywatch")
+    def __init__(self):
+        self.loc = Location()
+        self.setup_window()
+        self.setup_frames()
+        self.initialize()
+        self.window.mainloop()
 
-input_frame = tk.Frame(master=window)
-auto_frame = tk.Frame(master=window)
-output_frame = tk.Frame(master=window, padx=50)
+    def setup_window(self):
+        self.window = tk.Tk()
+        self.window.title('skywatch')
 
-lat_label = tk.Label(master=input_frame, text="Enter your Latitude", padx=20, pady=10)
-lat_input = tk.Entry(master=input_frame)
-lat_input.insert(0, get_stored_lat())
-lat_label.grid(row = 0, column = 0)
-lat_input.grid(row = 0, column = 1)
+    def setup_frames(self):
+        self.input_frame = tk.Frame(master=self.window)
+        self.setup_input_frame()
 
-long_label = tk.Label(master=input_frame, text="Enter your Longitude", padx=20, pady=10)
-long_input = tk.Entry(master=input_frame)
-long_input.insert(0, get_stored_long())
-long_label.grid(row = 1, column = 0)
-long_input.grid(row = 1, column = 1)
+        self.auto_frame = tk.Frame(master=self.window)
+        self.setup_auto_frame()
 
-output_label = tk.Label(master=output_frame, height=5, text="No result yet")
-output_label.grid(row = 0, column = 0)
+        self.output_frame = tk.Frame(master=self.window, padx=50)
+        self.setup_output_frame()
 
-def auto_latlng():
-    store_data(g.latlng[0], g.latlng[1])
-    lat_input.delete(0, tk.END)
-    lat_input.insert(0, g.latlng[0])
+        self.planets_frame = tk.Frame(master=self.window, pady=5)
 
-    long_input.delete(0, tk.END)
-    long_input.insert(0, g.latlng[1])
+        self.input_frame.grid(row=0, column = 0)
+        self.output_frame.grid(row = 0, column = 1, rowspan=2)
+        self.auto_frame.grid(row = 1, column = 0)
+        self.planets_frame.grid(row = 2, column = 0, columnspan=2)
 
-def generate_output():
-    output_label.config(text = tuple_to_text(get_clearSkyTimes(get_weather(lat_input.get(), long_input.get()))))
-    if get_clearSkyTimes(get_weather(lat_input.get(), long_input.get())) != -1:
-        create_planets(lat_input.get(), long_input.get())
+    def setup_input_frame(self):
+        self.lat_label = tk.Label(master=self.input_frame, text="Enter your Latitude", padx=20, pady=10)
+        self.lat_input = tk.Entry(master=self.input_frame)
+        self.lat_input.insert(0, self.loc.lat)
+        self.lat_label.grid(row = 0, column = 0)
+        self.lat_input.grid(row = 0, column = 1)
 
-coord_button = tk.Button(master=auto_frame, text="Use My Current Location (Autofill)", command=auto_latlng,padx=20, pady=20)
-coord_button.grid(row = 2, column = 0)
+        self.long_label = tk.Label(master=self.input_frame, text="Enter your Longitude", padx=20, pady=10)
+        self.long_input = tk.Entry(master=self.input_frame)
+        self.long_input.insert(0, self.loc.long)
+        self.long_label.grid(row = 1, column = 0)
+        self.long_input.grid(row = 1, column = 1)
 
-output_button = tk.Button(master=output_frame, text="Generate Output", padx=20, pady=20, command=generate_output)
-output_button.grid(row = 1, column = 0)
+    def setup_output_frame(self):
+        self.output_label = tk.Label(master=self.output_frame, height=5, text="No result yet")
+        self.output_label.grid(row = 0, column = 0)
 
-input_frame.grid(row=0, column = 0)
-output_frame.grid(row = 0, column = 1, rowspan=2)
-auto_frame.grid(row = 1, column = 0)
+        self.output_button = tk.Button(master=self.output_frame, text="Generate Output", padx=20, pady=20, command=self.generate)
+        self.output_button.grid(row = 1, column = 0)
 
-# CREATE THE PLANETS VIEW
+    def setup_auto_frame(self):
+        self.coord_button = tk.Button(master=self.auto_frame, text="Use My Current Location (Autofill)", command=self.auto_latlng,padx=20, pady=20)
+        self.coord_button.grid(row = 2, column = 0)
 
-planets_frame = tk.Frame(master=window, pady=5)
+    def setup_planets_frame(self):
+        for item in self.planets_frame.winfo_children():
+            item.destroy()
 
-def create_planets(lat, long):
+        visibility_data = self.loc.planets.planets_visibility_arr
+        visible_times = self.loc.weather.valid_times
 
-    for item in planets_frame.winfo_children():
-        item.destroy()
+        planets = ["Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"]
 
-    visibility_data = collect_planets(lat, long)
-    weather_data = get_weather(lat, long)
-    visible_times = get_clearSkyTimes(weather_data)
+        currentCol = 1
 
-    planets = ["Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"]
+        for tuple in visible_times:
 
-    currentCol = 1
+            lower = tuple[0]
+            upper = tuple[1]
 
-    for tuple in visible_times:
-
-        lower = tuple[0]
-        upper = tuple[1]
-
-        for x in range (upper - lower + 1):
-            currentTime = lower + x
-            temp_label = tk.Label(master=planets_frame, text=convert_to_time(currentTime))
-            temp_label.grid(column=currentCol, row = 0)
-            currentCol = currentCol + 1
+            for x in range (upper - lower + 1):
+                currentTime = lower + x
+                temp_label = tk.Label(master=self.planets_frame, text=self.loc.weather.convert_to_time(currentTime))
+                temp_label.grid(column=currentCol, row = 0)
+                currentCol = currentCol + 1
         
 
-    for planet in range(len(planets)):
-        temp_label = tk.Label(master=planets_frame, text=planets[planet], pady = 3)
-        temp_label.grid(row = planet + 1, column = 0)
+            for planet in range(len(planets)):
+                temp_label = tk.Label(master=self.planets_frame, text=planets[planet], pady = 3)
+                temp_label.grid(row = planet + 1, column = 0)
 
-        for index in range(len(visibility_data)):
-            if visibility_data[index][planet]:
-                temp_label = tk.Label(master=planets_frame, text="  ", bg="blue")
-            else:
-                temp_label = tk.Label(master=planets_frame, text="  ", bg="red")
-            temp_label.grid(row = planet + 1, column = index + 1)
+                for index in range(len(visibility_data)):
+                    if visibility_data[index][planet]:
+                        temp_label = tk.Label(master=self.planets_frame, text="  ", bg="blue")
+                    else:
+                        temp_label = tk.Label(master=self.planets_frame, text="  ", bg="red")
+                    temp_label.grid(row = planet + 1, column = index + 1)
 
-    # planets_frame.grid(row = 2, column = 0, columnspan=2)
+    def change_latlng(self):
+        self.lat_input.delete(0, tk.END)
+        self.lat_input.insert(0, self.loc.lat)
 
-planets_frame.grid(row = 2, column = 0, columnspan=2)
+        self.long_input.delete(0, tk.END)
+        self.long_input.insert(0, self.loc.long)
+
+    def auto_latlng(self):
+        self.loc.set_to_current_location()
+        self.change_latlng()
+        self.generate()
+
+    def initialize(self):
+        self.output_label.config(text = self.loc.weather.weather_string)
+        if self.loc.weather.valid_times != -1:
+            self.setup_planets_frame()
+
+    def generate(self):
+        self.loc.set_manual_location(self.lat_input.get(), self.long_input.get())
+
+        self.initialize()
 
 
-# Run the application
-window.mainloop()
+graphics =  Graphics()
