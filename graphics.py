@@ -1,19 +1,54 @@
 import tkinter as tk
+from tkinter import ttk
 from storage import *
 from location import *
+from PIL import ImageTk, Image
+from tkcalendar import Calendar
+from datetime import date
 
 class Graphics:
 
     def __init__(self):
+        self.setup_window()
+        self.begin_loading()
+        self.window.after(100, self.setup_main_frame)
+        self.window.mainloop()
+        
+        
+    def setup_main_frame(self):
         self.loc = Location()
+        self.window.destroy()
         self.setup_window()
         self.setup_frames()
         self.initialize()
         self.window.mainloop()
 
+    
+    def begin_loading(self):
+        self.window.geometry=("500x500")
+        raw_image = Image.open("Skywatch.png")
+        logo = ImageTk.PhotoImage(raw_image)
+
+        self.title = tk.Label(master=self.window, image=logo, height=500, width=500)
+        self.title.image = logo
+        self.title.place(anchor='ne', relx=0.5, rely=0.5)
+        self.title.pack()
+
+        self.pb = ttk.Progressbar(
+            self.window,
+            orient='horizontal',
+            mode='indeterminate',
+            length=280
+        )
+        self.pb.pack()
+
+
     def setup_window(self):
         self.window = tk.Tk()
         self.window.title('skywatch')
+        style = ttk.Style(self.window)
+        style.theme_use("clam")
+        
 
     def setup_frames(self):
         self.input_frame = tk.Frame(master=self.window)
@@ -54,7 +89,14 @@ class Graphics:
 
     def setup_auto_frame(self):
         self.coord_button = tk.Button(master=self.auto_frame, text="Use My Current Location (Autofill)", command=self.auto_latlng,padx=20, pady=20)
-        self.coord_button.grid(row = 2, column = 0)
+        self.coord_button.grid(row = 0, column = 0, columnspan = 2)
+
+        self.date_label = tk.Label(master=self.auto_frame, text="Night of ", pady = 50)
+        self.calendar = Calendar(self.auto_frame, selectmode = 'day',
+               year = date.today().year, month = date.today().month,
+               day = date.today().day)
+        self.date_label.grid(row = 1, column = 0)
+        self.calendar.grid(row = 1, column = 1)
 
     def setup_planets_frame(self):
         for item in self.planets_frame.winfo_children():
